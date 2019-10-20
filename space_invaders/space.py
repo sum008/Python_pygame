@@ -58,7 +58,7 @@ invader_x=-2
 
 invadery_position=10
 
-bullet_probability=1
+bullet_probability=0
 
 bullet_count=1
 
@@ -169,6 +169,7 @@ while run:
     text=(current_health*100)//original_health
     player_health_percentage(str(text)+" %", (229,218,218,0.1), 90, 20)
     display.blit(draw_player_healthbar(player_health),(150,20))
+    
 #---------------------------Draw Invader and remove invader when hit with bullet---------------------#
     
     for i in invader_list:
@@ -189,8 +190,11 @@ while run:
                 wallhit=1
             
             if abs(i[0]-player_x)<=15 and abs(i[1]-player_y)<=20:
-                print("game over")
-                run=False
+                player_health-=1
+                invader_list.remove(i)
+                if player_health==0:
+                    print("game over")
+                    run=False
                 
         elif wallhit==1:
             i[0]-=2
@@ -207,8 +211,11 @@ while run:
                 wallhit=0
                 
             if abs(i[0]-player_x)<=15 and abs(i[1]-player_y)<=20:
-                print("game over")
-                run=False
+                player_health-=1
+                invader_list.remove(i)
+                if player_health==0:
+                    print("game over")
+                    run=False
                 
         if i[1]>=381:
             invader_list.remove(i)
@@ -220,7 +227,6 @@ while run:
 #------------------------------Display Player Score-----------------------------------------------------------
 
     if run==False:
-        print("falseeeeeee")
         try:
             with open("highScore.txt","r+") as file:
                 content=file.read()
