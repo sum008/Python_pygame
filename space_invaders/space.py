@@ -2,19 +2,23 @@ import pygame as p
 from random import randint
 
 p.init()
-display=p.display.set_mode((400,400))
+p.mixer.init()
+width=600
+height=400
+display=p.display.set_mode((width,height))
 p.display.set_caption("Space Invaders")
 clock = p.time.Clock()
 white=(255,255,255)
 black=(0,0,0)
 font=p.font.SysFont(None, 30)
+font_health=p.font.SysFont(None, 25)
 display.fill(black)
 
 invader_y=10
 invader_x=0
 
 player_x=4 
-player_y=380
+player_y=360
 
 wallhit=0
 
@@ -24,7 +28,7 @@ run=True
 
 # player=p.Surface((15,15))
 # player.fill((255,255,255))
-player=p.image.load("Ship.png")
+player=p.image.load("Spaceship (4).png")
 
 # invader = p.Surface((15,15))
 # invader.fill((255,255,255))
@@ -39,11 +43,13 @@ offsety=20
 
 invader_list=[]
 
+number_of_invader=8
+
 invader_sprite={1:"InvaderB_00.png",2:"InvaderB_01.png",3:"InvaderC_00.png",4:"InvaderC_01.png"}
 inv=randint(1,4)
 invader=p.image.load(invader_sprite[inv])
 
-for i in range(6):
+for i in range(number_of_invader):
     invader_list.append([invader_x,invader_y,invader])
     invader_x+=offsetx
     
@@ -58,21 +64,33 @@ bullet_count=1
 
 invader_bullet_list=[]
 
+def draw_player_healthbar(player_health1):
+
+    player_health=player_health1
+    player_life=p.Surface((40*player_health,15))
+    player_life.fill((229,218,218,0.1))
+    return player_life
 
 def score_board(text,color,x,y):
     score1=font.render(text,True,color)
     display.blit(score1,(x,y))
-
+    
+def player_health_percentage(text,color,x,y):
+    health=font_health.render(text,True,color)
+    display.blit(health,(x,y))
+    
+player_health=7
+original_health=player_health*40
 while run:
     
     display.fill(black)
     
 #------------------------Invaders respawning after some duration-----------------------------------
 
-    if ((400//2-invadery_position)<=5  and (len(invader_list)+6)<=18) or len(invader_list)==0:
+    if ((height//2-invadery_position)<=5  and (len(invader_list)+number_of_invader)<=18) or len(invader_list)==0:
         inv=randint(1,4)
         invader=p.image.load(invader_sprite[inv])
-        for i in range(6):
+        for i in range(number_of_invader):
             invader_list.append([invader_x,invader_y,invader])
             invader_x+=offsetx
         invader_y=10
@@ -87,6 +105,8 @@ while run:
         if event.type==p.KEYDOWN:
             if event.key==32:
                 list_bullet.append([player_x+5,player_y])
+                p.mixer.music.load("ShipBullet.wav")
+                p.mixer.music.play()
     
     keys=p.key.get_pressed()
             
@@ -94,7 +114,7 @@ while run:
         if player_x>=6:
             player_x-=4
     if keys[p.K_RIGHT]:
-        if player_x<=365:
+        if (player_x+50)<=width: #50 is player width
             player_x+=4
         
 #     if keys[p.K_SPACE]:
@@ -122,20 +142,33 @@ while run:
             bx=invader_list[b][0]
             by=invader_list[b][1]
             invader_bullet_list.append([bx,by])
+            p.mixer.music.load("InvaderBullet.wav")
+            p.mixer.music.play()
             
     for k in invader_bullet_list:
-        if k[1]>=390 :
+        if k[1]>=height-20 :
             bullet_count=1
             invader_bullet_list.remove(k)
-        elif (abs(k[1]-player_y)<=10 and abs(k[0]-player_x)<=10):
-            run=False
-            print("Game overrr")
-            break
+        elif abs(k[1]-player_y)<=5 and k[0]>=player_x and  k[0]<=(player_x+49):
+            p.mixer.music.load("ShipHit.wav")
+            p.mixer.music.play()
+            player_health-=1
+            invader_bullet_list.remove(k)
+            bullet_count=1
+            print("player heal  ",player_health)
+            if player_health==0:
+                run=False
+                print("Game overrr",player_health)
+                break
+                
         else:
             k[1]+=5
             bullet_count+=1
         display.blit(bullet,(k[0],k[1])) 
-    
+    current_health=40*player_health
+    text=(current_health*100)//original_health
+    player_health_percentage(str(text)+" %", (229,218,218,0.1), 90, 20)
+    display.blit(draw_player_healthbar(player_health),(150,20))
 #---------------------------Draw Invader and remove invader when hit with bullet---------------------#
     
     for i in invader_list:
@@ -143,12 +176,14 @@ while run:
             i[0]+=2
             for i_ in list_bullet:
                
-                if abs(i_[0]-i[0])<=10 and abs(i_[1]-i[1]<=10):   
+                if abs(i_[0]-i[0])<=10 and abs(i_[1]-i[1]<=10):
+                    p.mixer.music.load("InvaderHit.wav")
+                    p.mixer.music.pause()  
                     list_bullet.remove(i_)
                     invader_list.remove(i)
                     score+=1
                     break
-            if i[0]>=380:
+            if i[0]>=width-20:
                 for j in invader_list:
                     j[1]+=20
                 wallhit=1
@@ -199,7 +234,7 @@ while run:
             file.close() 
 
     text="Current Score : "+str(score)
-    score_board(text, (169 ,220 ,223), 100, 350)
+    score_board(text, (169 ,220 ,223), 20, 350)
     try:
         with open("highScore.txt","r+") as file:
             content=file.read()
@@ -210,7 +245,7 @@ while run:
         file.close() 
         text="High Score : 0"
         
-    score_board(text, (169 ,220 ,223), 100, 20)
+    score_board(text, (169 ,220 ,223), 410, 350)
     print(len(invader_list))
     p.display.flip()
     clock.tick(60)
