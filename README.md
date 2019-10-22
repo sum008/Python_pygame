@@ -1,1 +1,1 @@
-Small games and some designs(chaos game) using pygame library 
+Small games and some physics implementation
